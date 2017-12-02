@@ -27,6 +27,7 @@
 #include <linux/mutex.h>
 #include <linux/clk.h>
 #include <sound/core.h>
+#include <linux/acpi.h>
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
 #include <sound/soc.h>
@@ -797,10 +798,22 @@ static const struct i2c_device_id wm8731_i2c_id[] = {
 };
 MODULE_DEVICE_TABLE(i2c, wm8731_i2c_id);
 
+
+static const struct acpi_device_id wm8731_acpi_match[] = {
+	{ "INT343A", 0 },
+	{},
+};
+MODULE_DEVICE_TABLE(acpi, wm8731_acpi_match);
+
+
 static struct i2c_driver wm8731_i2c_driver = {
 	.driver = {
 		.name = "wm8731",
+		.owner = THIS_MODULE,
+		// use wm8731_of_match table which is defined in arch/x86/platform/mb3/mb3_wm8731_i2c.c
 		.of_match_table = wm8731_of_match,
+		// use acpi_match table for i2c
+		//.acpi_match_table = ACPI_PTR(wm8731_acpi_match),
 	},
 	.probe =    wm8731_i2c_probe,
 	.remove =   wm8731_i2c_remove,
@@ -811,6 +824,7 @@ static struct i2c_driver wm8731_i2c_driver = {
 static int __init wm8731_modinit(void)
 {
 	int ret = 0;
+
 #if IS_ENABLED(CONFIG_I2C)
 	ret = i2c_add_driver(&wm8731_i2c_driver);
 	if (ret != 0) {
