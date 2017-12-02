@@ -49,6 +49,7 @@
 #include <trace/events/asoc.h>
 
 #define NAME_SIZE	32
+#define DEBUG
 
 #ifdef CONFIG_DEBUG_FS
 struct dentry *snd_soc_debugfs_root;
@@ -1525,6 +1526,7 @@ static int soc_post_component_init(struct snd_soc_pcm_runtime *rtd,
 {
 	int ret = 0;
 
+	printk(KERN_DEBUG "[sound] %s %d %s pcm name: %s  \n", __FILE__, __LINE__, __func__, name);
 	/* register the rtd device */
 	rtd->dev = kzalloc(sizeof(struct device), GFP_KERNEL);
 	if (!rtd->dev)
@@ -1548,6 +1550,7 @@ static int soc_post_component_init(struct snd_soc_pcm_runtime *rtd,
 			"ASoC: failed to register runtime device: %d\n", ret);
 		return ret;
 	}
+	printk(KERN_DEBUG "[sound] %s %d %s finish  \n", __FILE__, __LINE__, __func__);
 	rtd->dev_registered = 1;
 	return 0;
 }
@@ -1591,6 +1594,7 @@ static int soc_probe_link_components(struct snd_soc_card *card,
 static int soc_probe_dai(struct snd_soc_dai *dai, int order)
 {
 	int ret;
+	printk(KERN_DEBUG "[sound] %s %d %s dai_name:%s \n", __FILE__, __LINE__, __func__, dai->name);
 
 	if (!dai->probed && dai->driver->probe_order == order) {
 		if (dai->driver->probe) {
@@ -1681,6 +1685,7 @@ static int soc_probe_link_dais(struct snd_soc_card *card,
 
 	dev_dbg(card->dev, "ASoC: probe %s dai link %d late %d\n",
 			card->name, rtd->num, order);
+	printk(KERN_DEBUG "[sound] %s %d %s card_name:%s, num:%d\n", __FILE__, __LINE__, __func__, card->name, rtd->num);
 
 	/* set default power off timeout */
 	rtd->pmdown_time = pmdown_time;
@@ -1735,22 +1740,26 @@ static int soc_probe_link_dais(struct snd_soc_card *card,
 
 		if (!dai_link->params) {
 			/* create the pcm */
+			printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 			ret = soc_new_pcm(rtd, rtd->num);
 			if (ret < 0) {
 				dev_err(card->dev, "ASoC: can't create pcm %s :%d\n",
 				       dai_link->stream_name, ret);
 				return ret;
 			}
+			printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 			ret = soc_link_dai_pcm_new(&cpu_dai, 1, rtd);
 			if (ret < 0)
 				return ret;
 			ret = soc_link_dai_pcm_new(rtd->codec_dais,
 						   rtd->num_codecs, rtd);
+			printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 			if (ret < 0)
 				return ret;
 		} else {
 			INIT_DELAYED_WORK(&rtd->delayed_work,
 						codec2codec_close_delayed_work);
+			printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 			/* link the DAI widgets */
 			ret = soc_link_dai_widgets(card, dai_link, rtd);
@@ -2088,6 +2097,7 @@ static int snd_soc_instantiate_card(struct snd_soc_card *card)
 
 	mutex_lock(&client_mutex);
 	mutex_lock_nested(&card->mutex, SND_SOC_CARD_CLASS_INIT);
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	/* bind DAIs */
 	for (i = 0; i < card->num_links; i++) {
@@ -2190,12 +2200,15 @@ static int snd_soc_instantiate_card(struct snd_soc_card *card)
 		if (ret)
 			goto probe_dai_err;
 	}
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	/* probe all DAI links on this card */
 	for (order = SND_SOC_COMP_ORDER_FIRST; order <= SND_SOC_COMP_ORDER_LAST;
 			order++) {
 		list_for_each_entry(rtd, &card->rtd_list, list) {
+			printk(KERN_DEBUG "[sound] %s %d %s card_name:%s \n", __FILE__, __LINE__, __func__, card->name);
 			ret = soc_probe_link_dais(card, rtd, order);
+			
 			if (ret < 0) {
 				dev_err(card->dev,
 					"ASoC: failed to instantiate card %d\n",
@@ -2855,6 +2868,7 @@ int snd_soc_register_card(struct snd_soc_card *card)
 {
 	int i, ret;
 	struct snd_soc_pcm_runtime *rtd;
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	if (!card->name || !card->dev)
 		return -EINVAL;
@@ -3584,6 +3598,7 @@ int snd_soc_register_codec(struct device *dev,
 	int ret, i;
 
 	dev_dbg(dev, "codec register %s\n", dev_name(dev));
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	codec = kzalloc(sizeof(struct snd_soc_codec), GFP_KERNEL);
 	if (codec == NULL)
@@ -3595,6 +3610,7 @@ int snd_soc_register_codec(struct device *dev,
 			&codec_drv->component_driver, dev);
 	if (ret)
 		goto err_free;
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	if (codec_drv->probe)
 		codec->component.probe = snd_soc_codec_drv_probe;
@@ -3609,6 +3625,7 @@ int snd_soc_register_codec(struct device *dev,
 	if (codec_drv->read)
 		codec->component.read = snd_soc_codec_drv_read;
 	codec->component.ignore_pmdown_time = codec_drv->ignore_pmdown_time;
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	dapm = snd_soc_codec_get_dapm(codec);
 	dapm->idle_bias_off = codec_drv->idle_bias_off;
@@ -3620,11 +3637,13 @@ int snd_soc_register_codec(struct device *dev,
 	codec->dev = dev;
 	codec->driver = codec_drv;
 	codec->component.val_bytes = codec_drv->reg_word_size;
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 #ifdef CONFIG_DEBUG_FS
 	codec->component.init_debugfs = soc_init_codec_debugfs;
 	codec->component.debugfs_prefix = "codec";
 #endif
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	if (codec_drv->get_regmap)
 		codec->component.regmap = codec_drv->get_regmap(dev);
@@ -3642,14 +3661,18 @@ int snd_soc_register_codec(struct device *dev,
 
 	list_for_each_entry(dai, &codec->component.dai_list, list)
 		dai->codec = codec;
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	mutex_lock(&client_mutex);
 	snd_soc_component_add_unlocked(&codec->component);
 	list_add(&codec->list, &codec_list);
 	mutex_unlock(&client_mutex);
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	dev_dbg(codec->dev, "ASoC: Registered codec '%s'\n",
 		codec->component.name);
+	printk(KERN_DEBUG "[sound] %s %d %s - ASoC: Registered codec\n", __FILE__, __LINE__, __func__);
+
 	return 0;
 
 err_cleanup:

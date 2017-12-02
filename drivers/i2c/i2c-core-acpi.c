@@ -18,6 +18,7 @@
 #include <linux/slab.h>
 
 #include "i2c-core.h"
+#define DEBUG
 
 struct i2c_acpi_handler_data {
 	struct acpi_connection_info info;

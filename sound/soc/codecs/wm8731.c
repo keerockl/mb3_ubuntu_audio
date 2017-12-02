@@ -27,6 +27,7 @@
 #include <linux/mutex.h>
 #include <linux/clk.h>
 #include <sound/core.h>
+#include <linux/acpi.h>
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
 #include <sound/soc.h>
@@ -388,12 +389,16 @@ static int wm8731_set_dai_sysclk(struct snd_soc_dai *codec_dai,
 	struct snd_soc_dapm_context *dapm = snd_soc_codec_get_dapm(codec);
 	struct wm8731_priv *wm8731 = snd_soc_codec_get_drvdata(codec);
 
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
+
 	switch (clk_id) {
 	case WM8731_SYSCLK_XTAL:
 	case WM8731_SYSCLK_MCLK:
+		printk(KERN_DEBUG "[sound] clk_id : 1- XTAL, 2 - MCLK value: %d, freq:%d \n",clk_id, freq);
 		if (wm8731->mclk && clk_set_rate(wm8731->mclk, freq))
 			return -EINVAL;
 		wm8731->sysclk_type = clk_id;
+		printk(KERN_DEBUG "[sound] clk setting success \n");
 		break;
 	default:
 		return -EINVAL;
@@ -532,6 +537,7 @@ static int wm8731_startup(struct snd_pcm_substream *substream,
 	struct snd_soc_dai *dai)
 {
 	struct wm8731_priv *wm8731 = snd_soc_codec_get_drvdata(dai->codec);
+	printk(KERN_DEBUG "[sound] wm8731.c %d %s\n", __LINE__, __func__);
 
 	if (wm8731->constraints)
 		snd_pcm_hw_constraint_list(substream->runtime, 0,
@@ -601,6 +607,7 @@ static int wm8731_hw_init(struct device *dev, struct wm8731_priv *wm8731)
 {
 	int ret = 0;
 
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 	ret = wm8731_reset(wm8731->regmap);
 	if (ret < 0) {
 		dev_err(dev, "Failed to issue reset: %d\n", ret);
@@ -666,6 +673,7 @@ static int wm8731_spi_probe(struct spi_device *spi)
 {
 	struct wm8731_priv *wm8731;
 	int ret;
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	wm8731 = devm_kzalloc(&spi->dev, sizeof(*wm8731), GFP_KERNEL);
 	if (wm8731 == NULL)
@@ -736,13 +744,16 @@ static int wm8731_i2c_probe(struct i2c_client *i2c,
 {
 	struct wm8731_priv *wm8731;
 	int ret;
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	wm8731 = devm_kzalloc(&i2c->dev, sizeof(struct wm8731_priv),
 			      GFP_KERNEL);
 	if (wm8731 == NULL)
 		return -ENOMEM;
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	wm8731->mclk = devm_clk_get(&i2c->dev, "mclk");
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 	if (IS_ERR(wm8731->mclk)) {
 		ret = PTR_ERR(wm8731->mclk);
 		if (ret == -ENOENT) {
@@ -754,14 +765,18 @@ static int wm8731_i2c_probe(struct i2c_client *i2c,
 			return ret;
 		}
 	}
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	mutex_init(&wm8731->lock);
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	i2c_set_clientdata(i2c, wm8731);
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	ret = wm8731_request_supplies(&i2c->dev, wm8731);
 	if (ret != 0)
 		return ret;
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	wm8731->regmap = devm_regmap_init_i2c(i2c, &wm8731_regmap);
 	if (IS_ERR(wm8731->regmap)) {
@@ -770,13 +785,16 @@ static int wm8731_i2c_probe(struct i2c_client *i2c,
 			ret);
 		return ret;
 	}
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	ret = wm8731_hw_init(&i2c->dev, wm8731);
 	if (ret != 0)
 		return ret;
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	ret = snd_soc_register_codec(&i2c->dev,
 			&soc_codec_dev_wm8731, &wm8731_dai, 1);
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 	if (ret != 0) {
 		dev_err(&i2c->dev, "Failed to register CODEC: %d\n", ret);
 		return ret;
@@ -797,10 +815,19 @@ static const struct i2c_device_id wm8731_i2c_id[] = {
 };
 MODULE_DEVICE_TABLE(i2c, wm8731_i2c_id);
 
+
+static const struct acpi_device_id wm8731_acpi_match[] = {
+	{ "INT343A", 0 },
+	{},
+};
+MODULE_DEVICE_TABLE(acpi, wm8731_acpi_match);
+
+
 static struct i2c_driver wm8731_i2c_driver = {
 	.driver = {
 		.name = "wm8731",
-		.of_match_table = wm8731_of_match,
+		//.of_match_table = wm8731_of_match,
+		.acpi_match_table = ACPI_PTR(wm8731_acpi_match),
 	},
 	.probe =    wm8731_i2c_probe,
 	.remove =   wm8731_i2c_remove,
@@ -811,7 +838,10 @@ static struct i2c_driver wm8731_i2c_driver = {
 static int __init wm8731_modinit(void)
 {
 	int ret = 0;
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
+
 #if IS_ENABLED(CONFIG_I2C)
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 	ret = i2c_add_driver(&wm8731_i2c_driver);
 	if (ret != 0) {
 		printk(KERN_ERR "Failed to register WM8731 I2C driver: %d\n",
@@ -819,6 +849,7 @@ static int __init wm8731_modinit(void)
 	}
 #endif
 #if defined(CONFIG_SPI_MASTER)
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 	ret = spi_register_driver(&wm8731_spi_driver);
 	if (ret != 0) {
 		printk(KERN_ERR "Failed to register WM8731 SPI driver: %d\n",

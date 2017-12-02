@@ -33,6 +33,7 @@
 #include <sound/initval.h>
 
 #define DPCM_MAX_BE_USERS	8
+#define DEBUG
 
 /*
  * snd_soc_dai_stream_valid() - check if a DAI supports the given stream
@@ -1123,6 +1124,7 @@ static int dpcm_be_connect(struct snd_soc_pcm_runtime *fe,
 		struct snd_soc_pcm_runtime *be, int stream)
 {
 	struct snd_soc_dpcm *dpcm;
+	printk(KERN_DEBUG "[sound] %s %d %s  \n", __FILE__, __LINE__, __func__);
 
 	/* only add new dpcms */
 	list_for_each_entry(dpcm, &fe->dpcm[stream].be_clients, list_be) {
@@ -1142,6 +1144,9 @@ static int dpcm_be_connect(struct snd_soc_pcm_runtime *fe,
 	list_add(&dpcm->list_fe, &be->dpcm[stream].fe_clients);
 
 	dev_dbg(fe->dev, "connected new DPCM %s path %s %s %s\n",
+			stream ? "capture" : "playback",  fe->dai_link->name,
+			stream ? "<-" : "->", be->dai_link->name);
+	printk(KERN_DEBUG "			connected new DPCM %s path %s %s %s\n",
 			stream ? "capture" : "playback",  fe->dai_link->name,
 			stream ? "<-" : "->", be->dai_link->name);
 
@@ -1381,10 +1386,12 @@ static int dpcm_add_paths(struct snd_soc_pcm_runtime *fe, int stream,
 	struct snd_soc_dapm_widget_list *list = *list_;
 	struct snd_soc_pcm_runtime *be;
 	int i, new = 0, err;
+	printk(KERN_DEBUG "[sound] %s %d %s fe card  name: %s  \n", __FILE__, __LINE__, __func__, card->name);
 
 	/* Create any new FE <--> BE connections */
 	for (i = 0; i < list->num_widgets; i++) {
-
+		printk(KERN_DEBUG "	widget_name:%s, widget_id:%s", list->widgets[i]->name, list->widgets[i]->id);
+		printk(KERN_DEBUG "	");
 		switch (list->widgets[i]->id) {
 		case snd_soc_dapm_dai_in:
 			if (stream != SNDRV_PCM_STREAM_PLAYBACK)
@@ -1397,7 +1404,6 @@ static int dpcm_add_paths(struct snd_soc_pcm_runtime *fe, int stream,
 		default:
 			continue;
 		}
-
 		/* is there a valid BE rtd for this widget */
 		be = dpcm_get_be(card, list->widgets[i], stream);
 		if (!be) {
@@ -1405,14 +1411,17 @@ static int dpcm_add_paths(struct snd_soc_pcm_runtime *fe, int stream,
 					list->widgets[i]->name);
 			continue;
 		}
+		printk(KERN_DEBUG "	1");
 
 		/* make sure BE is a real BE */
 		if (!be->dai_link->no_pcm)
 			continue;
+		printk(KERN_DEBUG "	2");
 
 		/* don't connect if FE is not running */
 		if (!fe->dpcm[stream].runtime && !fe->fe_compr)
 			continue;
+		printk(KERN_DEBUG "	3");
 
 		/* newly connected FE and BE */
 		err = dpcm_be_connect(fe, be, stream);
@@ -1422,11 +1431,13 @@ static int dpcm_add_paths(struct snd_soc_pcm_runtime *fe, int stream,
 			break;
 		} else if (err == 0) /* already connected */
 			continue;
+		printk(KERN_DEBUG "	4");
 
 		/* new */
 		be->dpcm[stream].runtime_update = SND_SOC_DPCM_UPDATE_BE;
 		new++;
 	}
+	printk(KERN_DEBUG "[sound] %s %d %s finish  # of new BE path:%d \n", __FILE__, __LINE__, __func__, new);
 
 	dev_dbg(fe->dev, "ASoC: found %d new BE paths\n", new);
 	return new;
@@ -2117,12 +2128,15 @@ static int dpcm_fe_dai_do_trigger(struct snd_pcm_substream *substream, int cmd)
 	enum snd_soc_dpcm_trigger trigger = fe->dai_link->trigger[stream];
 
 	fe->dpcm[stream].runtime_update = SND_SOC_DPCM_UPDATE_FE;
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	switch (trigger) {
 	case SND_SOC_DPCM_TRIGGER_PRE:
 		/* call trigger on the frontend before the backend. */
 
 		dev_dbg(fe->dev, "ASoC: pre trigger FE %s cmd %d\n",
+				fe->dai_link->name, cmd);
+		printk(KERN_DEBUG "ASoC: pre trigger FE %s cmd %d\n",
 				fe->dai_link->name, cmd);
 
 		ret = soc_pcm_trigger(substream, cmd);
@@ -2144,6 +2158,8 @@ static int dpcm_fe_dai_do_trigger(struct snd_pcm_substream *substream, int cmd)
 
 		dev_dbg(fe->dev, "ASoC: post trigger FE %s cmd %d\n",
 				fe->dai_link->name, cmd);
+		printk(KERN_DEBUG "ASoC: post trigger FE %s cmd %d\n",
+				fe->dai_link->name, cmd);
 
 		ret = soc_pcm_trigger(substream, cmd);
 		break;
@@ -2152,7 +2168,8 @@ static int dpcm_fe_dai_do_trigger(struct snd_pcm_substream *substream, int cmd)
 
 		dev_dbg(fe->dev, "ASoC: bespoke trigger FE %s cmd %d\n",
 				fe->dai_link->name, cmd);
-
+		printk(KERN_DEBUG "ASoC: bespoke trigger FE %s cmd %d\n",
+				fe->dai_link->name, cmd);
 		ret = soc_pcm_bespoke_trigger(substream, cmd);
 		if (ret < 0) {
 			dev_err(fe->dev,"ASoC: trigger FE failed %d\n", ret);
@@ -2194,6 +2211,7 @@ static int dpcm_fe_dai_trigger(struct snd_pcm_substream *substream, int cmd)
 	/* if FE's runtime_update is already set, we're in race;
 	 * process this trigger later at exit
 	 */
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 	if (fe->dpcm[stream].runtime_update != SND_SOC_DPCM_UPDATE_NO) {
 		fe->dpcm[stream].trigger_pending = cmd + 1;
 		return 0; /* delayed, assuming it's successful */
@@ -2225,6 +2243,8 @@ int dpcm_be_dai_prepare(struct snd_soc_pcm_runtime *fe, int stream)
 
 		dev_dbg(be->dev, "ASoC: prepare BE %s\n",
 			be->dai_link->name);
+		printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
+		pr_err("ASoC: prepare BE %s\n", be->dai_link->name);
 
 		ret = soc_pcm_prepare(be_substream);
 		if (ret < 0) {
@@ -2246,6 +2266,9 @@ static int dpcm_fe_dai_prepare(struct snd_pcm_substream *substream)
 	mutex_lock_nested(&fe->card->mutex, SND_SOC_CARD_CLASS_RUNTIME);
 
 	dev_dbg(fe->dev, "ASoC: prepare FE %s\n", fe->dai_link->name);
+	pr_err( "ASoC: prepare FE %s codec_dai_name:%s \n", fe->dai_link->name, fe->dai_link->codec_dai_name);
+	pr_err("		card:%s codec_dai:%s, dai_link:%s",fe->card->name, fe->codec_dai->name, fe->dai_link->name);
+
 
 	dpcm_set_fe_update_state(fe, stream, SND_SOC_DPCM_UPDATE_FE);
 
@@ -2339,8 +2362,12 @@ static int dpcm_run_update_startup(struct snd_soc_pcm_runtime *fe, int stream)
 	struct snd_soc_dpcm *dpcm;
 	enum snd_soc_dpcm_trigger trigger = fe->dai_link->trigger[stream];
 	int ret;
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
+			
 
 	dev_dbg(fe->dev, "ASoC: runtime %s open on FE %s\n",
+			stream ? "capture" : "playback", fe->dai_link->name);
+	printk(KERN_DEBUG "ASoC: runtime %s open on FE %s\n",
 			stream ? "capture" : "playback", fe->dai_link->name);
 
 	/* Only start the BE if the FE is ready */
@@ -2352,14 +2379,17 @@ static int dpcm_run_update_startup(struct snd_soc_pcm_runtime *fe, int stream)
 	ret = dpcm_be_dai_startup(fe, stream);
 	if (ret < 0)
 		goto disconnect;
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	/* keep going if FE state is > open */
 	if (fe->dpcm[stream].state == SND_SOC_DPCM_STATE_OPEN)
 		return 0;
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	ret = dpcm_be_dai_hw_params(fe, stream);
 	if (ret < 0)
 		goto close;
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	/* keep going if FE state is > hw_params */
 	if (fe->dpcm[stream].state == SND_SOC_DPCM_STATE_HW_PARAMS)
@@ -2369,6 +2399,7 @@ static int dpcm_run_update_startup(struct snd_soc_pcm_runtime *fe, int stream)
 	ret = dpcm_be_dai_prepare(fe, stream);
 	if (ret < 0)
 		goto hw_free;
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	/* run the stream event for each BE */
 	dpcm_dapm_stream_event(fe, stream, SND_SOC_DAPM_STREAM_NOP);
@@ -2377,6 +2408,7 @@ static int dpcm_run_update_startup(struct snd_soc_pcm_runtime *fe, int stream)
 	if (fe->dpcm[stream].state == SND_SOC_DPCM_STATE_PREPARE ||
 		fe->dpcm[stream].state == SND_SOC_DPCM_STATE_STOP)
 		return 0;
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	if (trigger == SND_SOC_DPCM_TRIGGER_BESPOKE) {
 		/* call trigger on the frontend - FE takes care of all BE triggers */
@@ -2399,6 +2431,7 @@ static int dpcm_run_update_startup(struct snd_soc_pcm_runtime *fe, int stream)
 			goto hw_free;
 		}
 	}
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	return 0;
 
@@ -2642,6 +2675,7 @@ int soc_new_pcm(struct snd_soc_pcm_runtime *rtd, int num)
 	char new_name[64];
 	int ret = 0, playback = 0, capture = 0;
 	int i;
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	if (rtd->dai_link->dynamic || rtd->dai_link->no_pcm) {
 		playback = rtd->dai_link->dpcm_playback;
@@ -2695,6 +2729,7 @@ int soc_new_pcm(struct snd_soc_pcm_runtime *rtd, int num)
 		return ret;
 	}
 	dev_dbg(rtd->card->dev, "ASoC: registered pcm #%d %s\n",num, new_name);
+	printk(KERN_DEBUG "[sound] %s %d %s ASoC: registered pcm #%d %s \n", __FILE__, __LINE__, __func__,num, new_name);
 
 	/* DAPM dai link stream work */
 	INIT_DELAYED_WORK(&rtd->delayed_work, close_delayed_work);

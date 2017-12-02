@@ -47,6 +47,7 @@
 #include <linux/slab.h>
 
 #include "i2c-core.h"
+#define DEBUG
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/i2c.h>

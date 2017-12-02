@@ -24,7 +24,8 @@
 #include <sound/jack.h>
 #include <sound/pcm_params.h>
 #include "../../codecs/hdac_hdmi.h"
-#include "../../codecs/rt298.h"
+#include "../../codecs/wm8731.h"
+
 
 /* Headset jack detection DAPM pins */
 static struct snd_soc_jack broxton_headset;
@@ -80,40 +81,44 @@ static const struct snd_soc_dapm_widget broxton_widgets[] = {
 
 static const struct snd_soc_dapm_route broxton_rt298_map[] = {
 	/* speaker */
-	{"Speaker", NULL, "SPOR"},
-	{"Speaker", NULL, "SPOL"},
+	{"Speaker", NULL, "ROUT"},
+	{"Speaker", NULL, "LOUT"},
 
 	/* HP jack connectors - unknown if we have jack detect */
-	{"Headphone Jack", NULL, "HPO Pin"},
+	{"Headphone Jack", NULL, "LHPOUT"},
+	{"Headphone Jack", NULL, "RHPOUT"},
 
 	/* other jacks */
-	{"MIC1", NULL, "Mic Jack"},
+	{"MICIN", NULL, "Mic Jack"},
 
 	/* digital mics */
 	{"DMIC1 Pin", NULL, "DMIC2"},
 	{"DMic", NULL, "SoC DMIC"},
 
-	{"HDMI1", NULL, "hif5-0 Output"},
-	{"HDMI2", NULL, "hif6-0 Output"},
-	{"HDMI2", NULL, "hif7-0 Output"},
+	//{"HDMI1", NULL, "hif5-0 Output"},
+	//{"HDMI2", NULL, "hif6-0 Output"},
+	//{"HDMI2", NULL, "hif7-0 Output"},
+	{"LLINEIN", NULL, "Mic Jack"},
+	{"RLINEIN", NULL, "Mic Jack"},
+
 
 	/* CODEC BE connections */
-	{ "AIF1 Playback", NULL, "ssp5 Tx"},
-	{ "ssp5 Tx", NULL, "codec0_out"},
-	{ "ssp5 Tx", NULL, "codec1_out"},
+	{ "Playback", NULL, "ssp1 Tx"},
+	{ "ssp1 Tx", NULL, "codec0_out"},
+	{ "ssp1 Tx", NULL, "codec1_out"},
 
-	{ "codec0_in", NULL, "ssp5 Rx" },
-	{ "ssp5 Rx", NULL, "AIF1 Capture" },
+	{ "codec0_in", NULL, "ssp1 Rx" },
+	{ "ssp1 Rx", NULL, "Capture" },
 
-	{ "dmic01_hifi", NULL, "DMIC01 Rx" },
-	{ "DMIC01 Rx", NULL, "Capture" },
+//	{ "dmic01_hifi", NULL, "DMIC01 Rx" },
+//	{ "DMIC01 Rx", NULL, "Capture" },
 
-	{ "hifi3", NULL, "iDisp3 Tx"},
-	{ "iDisp3 Tx", NULL, "iDisp3_out"},
-	{ "hifi2", NULL, "iDisp2 Tx"},
-	{ "iDisp2 Tx", NULL, "iDisp2_out"},
-	{ "hifi1", NULL, "iDisp1 Tx"},
-	{ "iDisp1 Tx", NULL, "iDisp1_out"},
+//	{ "hifi3", NULL, "iDisp3 Tx"},
+//	{ "iDisp3 Tx", NULL, "iDisp3_out"},
+//	{ "hifi2", NULL, "iDisp2 Tx"},
+//	{ "iDisp2 Tx", NULL, "iDisp2_out"},
+//	{ "hifi1", NULL, "iDisp1 Tx"},
+//	{ "iDisp1 Tx", NULL, "iDisp1_out"},
 
 };
 
@@ -121,6 +126,7 @@ static int broxton_rt298_fe_init(struct snd_soc_pcm_runtime *rtd)
 {
 	struct snd_soc_dapm_context *dapm;
 	struct snd_soc_component *component = rtd->cpu_dai->component;
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	dapm = snd_soc_component_get_dapm(component);
 	snd_soc_dapm_ignore_suspend(dapm, "Reference Capture");
@@ -132,6 +138,7 @@ static int broxton_rt298_codec_init(struct snd_soc_pcm_runtime *rtd)
 {
 	struct snd_soc_codec *codec = rtd->codec;
 	int ret = 0;
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	ret = snd_soc_card_jack_new(rtd->card, "Headset",
 		SND_JACK_HEADSET | SND_JACK_BTN_0,
@@ -141,7 +148,7 @@ static int broxton_rt298_codec_init(struct snd_soc_pcm_runtime *rtd)
 	if (ret)
 		return ret;
 
-	rt298_mic_detect(codec, &broxton_headset);
+	//rt298_mic_detect(codec, &broxton_headset);
 
 	snd_soc_dapm_ignore_suspend(&rtd->card->dapm, "SoC DMIC");
 
@@ -153,6 +160,7 @@ static int broxton_hdmi_init(struct snd_soc_pcm_runtime *rtd)
 	struct bxt_rt286_private *ctx = snd_soc_card_get_drvdata(rtd->card);
 	struct snd_soc_dai *dai = rtd->codec_dai;
 	struct bxt_hdmi_pcm *pcm;
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	pcm = devm_kzalloc(rtd->card->dev, sizeof(*pcm), GFP_KERNEL);
 	if (!pcm)
@@ -193,8 +201,14 @@ static int broxton_rt298_hw_params(struct snd_pcm_substream *substream,
 	struct snd_soc_dai *codec_dai = rtd->codec_dai;
 	int ret;
 
-	ret = snd_soc_dai_set_sysclk(codec_dai, RT298_SCLK_S_PLL,
-					19200000, SND_SOC_CLOCK_IN);
+//	ret = snd_soc_dai_set_sysclk(codec_dai, RT298_SCLK_S_PLL,
+//					19200000, SND_SOC_CLOCK_IN);
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
+	ret = snd_soc_dai_set_sysclk(codec_dai, WM8731_SYSCLK_XTAL,
+					12288000, SND_SOC_CLOCK_IN);
+//	ret = snd_soc_dai_set_sysclk(codec_dai, WM8731_SYSCLK_MCLK,
+//					12288000, SND_SOC_CLOCK_IN);
+
 	if (ret < 0) {
 		dev_err(rtd->dev, "can't set codec sysclk configuration\n");
 		return ret;
@@ -240,6 +254,7 @@ static const struct snd_pcm_hw_constraint_list constraints_dmic_channels = {
 static int broxton_dmic_startup(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	runtime->hw.channels_max = 4;
 	snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_CHANNELS,
@@ -292,7 +307,10 @@ static const struct snd_soc_ops broxton_rt286_fe_ops = {
 
 /* broxton digital audio interface glue - connects codec <--> CPU */
 static struct snd_soc_dai_link broxton_rt298_dais[] = {
+
 	/* Front End DAI links */
+
+
 	[BXT_DPCM_AUDIO_PB] =
 	{
 		.name = "Bxt Audio Port",
@@ -388,19 +406,25 @@ static struct snd_soc_dai_link broxton_rt298_dais[] = {
 		.nonatomic = 1,
 		.dynamic = 1,
 	},
+
+
+
+		
 	/* Back End DAI links */
 	{
 		/* SSP5 - Codec */
-		.name = "SSP5-Codec",
+		.name = "SSP1-Codec",
 		.id = 0,
-		.cpu_dai_name = "SSP5 Pin",
+		.cpu_dai_name = "SSP1 Pin",
 		.platform_name = "0000:00:0e.0",
 		.no_pcm = 1,
 		.codec_name = "i2c-INT343A:00",
-		.codec_dai_name = "rt298-aif1",
+		.codec_dai_name = "wm8731-hifi",
 		.init = broxton_rt298_codec_init,
-		.dai_fmt = SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_NB_NF |
-						SND_SOC_DAIFMT_CBS_CFS,
+		.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_NB_NF |
+							SND_SOC_DAIFMT_CBS_CFS,
+//		.dai_fmt = SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_NB_NF |
+//						SND_SOC_DAIFMT_CBS_CFS,
 		.ignore_pmdown_time = 1,
 		.be_hw_params_fixup = broxton_ssp5_fixup,
 		.ops = &broxton_rt298_ops,
@@ -462,6 +486,7 @@ static int bxt_card_late_probe(struct snd_soc_card *card)
 	struct snd_soc_codec *codec = NULL;
 	int err, i = 0;
 	char jack_name[NAME_SIZE];
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	list_for_each_entry(pcm, &ctx->hdmi_pcm_list, head) {
 		codec = pcm->codec_dai->codec;
@@ -518,6 +543,7 @@ static int broxton_audio_probe(struct platform_device *pdev)
 
 	broxton_rt298.dev = &pdev->dev;
 	snd_soc_card_set_drvdata(&broxton_rt298, ctx);
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	return devm_snd_soc_register_card(&pdev->dev, &broxton_rt298);
 }

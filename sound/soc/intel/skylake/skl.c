@@ -515,6 +515,7 @@ static int probe_codec(struct hdac_ext_bus *ebus, int addr)
 	unsigned int cmd = (addr << 28) | (AC_NODE_ROOT << 20) |
 		(AC_VERB_PARAMETERS << 8) | AC_PAR_VENDOR_ID;
 	unsigned int res = -1;
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	mutex_lock(&bus->cmd_mutex);
 	snd_hdac_bus_send_cmd(bus, cmd);
@@ -534,6 +535,7 @@ static int skl_codec_create(struct hdac_ext_bus *ebus)
 	int c, max_slots;
 
 	max_slots = HDA_MAX_CODECS;
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	/* First try to probe all given codec slots */
 	for (c = 0; c < max_slots; c++) {
@@ -694,6 +696,7 @@ static int skl_first_init(struct hdac_ext_bus *ebus)
 	err = pci_request_regions(pci, "Skylake HD audio");
 	if (err < 0)
 		return err;
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	bus->addr = pci_resource_start(pci, 0);
 	bus->remap_addr = pci_ioremap_bar(pci, 0);
@@ -754,6 +757,7 @@ static int skl_probe(struct pci_dev *pci,
 	struct hdac_ext_bus *ebus = NULL;
 	struct hdac_bus *bus = NULL;
 	int err;
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	/* we use ext core ops, so provide NULL for ops here */
 	err = skl_create(pci, NULL, &skl);

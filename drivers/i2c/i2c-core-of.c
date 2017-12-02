@@ -21,6 +21,7 @@
 #include <linux/of_device.h>
 
 #include "i2c-core.h"
+#define DEBUG
 
 static struct i2c_client *of_i2c_register_device(struct i2c_adapter *adap,
 						 struct device_node *node)
