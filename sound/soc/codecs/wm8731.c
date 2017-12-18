@@ -346,6 +346,7 @@ static int wm8731_hw_params(struct snd_pcm_substream *substream,
 		(coeff_div[i].bosr << 1) | coeff_div[i].usb;
 
 	wm8731->playback_fs = params_rate(params);
+	printk(KERN_DEBUG "[sound] wm8731.c %d %s\n", __LINE__, __func__);
 
 	snd_soc_write(codec, WM8731_SRATE, srate);
 
@@ -394,7 +395,7 @@ static int wm8731_set_dai_sysclk(struct snd_soc_dai *codec_dai,
 	switch (clk_id) {
 	case WM8731_SYSCLK_XTAL:
 	case WM8731_SYSCLK_MCLK:
-		printk(KERN_DEBUG "[sound] clk_id : 1- XTAL, 2 - MCLK value: %d, freq:%d \n",clk_id, freq);
+		printk(KERN_DEBUG "[sound] clk_id : 1- XTAL, 0 - MCLK value: %d, freq:%d \n",clk_id, freq);
 		if (wm8731->mclk && clk_set_rate(wm8731->mclk, freq))
 			return -EINVAL;
 		wm8731->sysclk_type = clk_id;

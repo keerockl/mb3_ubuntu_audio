@@ -29,6 +29,8 @@
 #include "skl-topology.h"
 #include "skl-tplg-interface.h"
 
+
+#define DEBUG
 static int skl_alloc_dma_buf(struct device *dev,
 		struct snd_dma_buffer *dmab, size_t size)
 {
@@ -764,6 +766,7 @@ static int skl_set_module_format(struct skl_sst *ctx,
 			void **param_data)
 {
 	u16 param_size;
+	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
 	param_size  = skl_get_module_param_size(ctx, module_config);
 
@@ -802,9 +805,13 @@ static int skl_set_module_format(struct skl_sst *ctx,
 
 	}
 
+	printk(KERN_DEBUG "Module type=%d config size: %d bytes\n",
+			module_config->id.module_id, param_size);
 	dev_dbg(ctx->dev, "Module type=%d config size: %d bytes\n",
 			module_config->id.module_id, param_size);
 	print_hex_dump_debug("Module params:", DUMP_PREFIX_OFFSET, 8, 4,
+			*param_data, param_size, false);
+	print_hex_dump(KERN_ERR, "Module params:", DUMP_PREFIX_OFFSET, 8, 4,
 			*param_data, param_size, false);
 	return 0;
 }

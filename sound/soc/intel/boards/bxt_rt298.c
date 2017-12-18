@@ -26,6 +26,8 @@
 #include "../../codecs/hdac_hdmi.h"
 #include "../../codecs/wm8731.h"
 
+#define WM8731_FORMATS (SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S20_3LE |\
+	SNDRV_PCM_FMTBIT_S24_LE | SNDRV_PCM_FMTBIT_S32_LE)
 
 /* Headset jack detection DAPM pins */
 static struct snd_soc_jack broxton_headset;
@@ -63,17 +65,17 @@ static struct snd_soc_jack_pin broxton_headset_pins[] = {
 };
 
 static const struct snd_kcontrol_new broxton_controls[] = {
-	SOC_DAPM_PIN_SWITCH("Speaker"),
+	//SOC_DAPM_PIN_SWITCH("Speaker"),
 	SOC_DAPM_PIN_SWITCH("Headphone Jack"),
 	SOC_DAPM_PIN_SWITCH("Mic Jack"),
 };
 
 static const struct snd_soc_dapm_widget broxton_widgets[] = {
 	SND_SOC_DAPM_HP("Headphone Jack", NULL),
-	SND_SOC_DAPM_SPK("Speaker", NULL),
+	//SND_SOC_DAPM_SPK("Speaker", NULL),
 	SND_SOC_DAPM_MIC("Mic Jack", NULL),
-	SND_SOC_DAPM_MIC("DMIC2", NULL),
-	SND_SOC_DAPM_MIC("SoC DMIC", NULL),
+	//SND_SOC_DAPM_MIC("DMIC2", NULL),
+	//SND_SOC_DAPM_MIC("SoC DMIC", NULL),
 	SND_SOC_DAPM_SPK("HDMI1", NULL),
 	SND_SOC_DAPM_SPK("HDMI2", NULL),
 	SND_SOC_DAPM_SPK("HDMI3", NULL),
@@ -81,8 +83,8 @@ static const struct snd_soc_dapm_widget broxton_widgets[] = {
 
 static const struct snd_soc_dapm_route broxton_rt298_map[] = {
 	/* speaker */
-	{"Speaker", NULL, "ROUT"},
-	{"Speaker", NULL, "LOUT"},
+	//{"Speaker", NULL, "ROUT"},
+	//{"Speaker", NULL, "LOUT"},
 
 	/* HP jack connectors - unknown if we have jack detect */
 	{"Headphone Jack", NULL, "LHPOUT"},
@@ -92,14 +94,14 @@ static const struct snd_soc_dapm_route broxton_rt298_map[] = {
 	{"MICIN", NULL, "Mic Jack"},
 
 	/* digital mics */
-	{"DMIC1 Pin", NULL, "DMIC2"},
-	{"DMic", NULL, "SoC DMIC"},
+	//{"DMIC1 Pin", NULL, "DMIC2"},
+	//{"DMiC2", NULL, "SoC DMIC"},
 
-	//{"HDMI1", NULL, "hif5-0 Output"},
-	//{"HDMI2", NULL, "hif6-0 Output"},
-	//{"HDMI2", NULL, "hif7-0 Output"},
-	{"LLINEIN", NULL, "Mic Jack"},
-	{"RLINEIN", NULL, "Mic Jack"},
+	{"HDMI1", NULL, "hif5-0 Output"},
+	{"HDMI2", NULL, "hif6-0 Output"},
+	{"HDMI2", NULL, "hif7-0 Output"},
+	//{"LLINEIN", NULL, "Mic Jack"},
+	//{"RLINEIN", NULL, "Mic Jack"},
 
 
 	/* CODEC BE connections */
@@ -189,7 +191,9 @@ static int broxton_ssp5_fixup(struct snd_soc_pcm_runtime *rtd,
 
 	/* set SSP5 to 24 bit */
 	snd_mask_none(fmt);
-	snd_mask_set(fmt, SNDRV_PCM_FORMAT_S24_LE);
+	//snd_mask_set(fmt, SNDRV_PCM_FORMAT_S24_LE);
+	snd_mask_set(fmt, WM8731_FORMATS);
+		
 
 	return 0;
 }
@@ -204,10 +208,10 @@ static int broxton_rt298_hw_params(struct snd_pcm_substream *substream,
 //	ret = snd_soc_dai_set_sysclk(codec_dai, RT298_SCLK_S_PLL,
 //					19200000, SND_SOC_CLOCK_IN);
 	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
-	ret = snd_soc_dai_set_sysclk(codec_dai, WM8731_SYSCLK_XTAL,
+	//ret = snd_soc_dai_set_sysclk(codec_dai, WM8731_SYSCLK_XTAL,
+	//				12288000, SND_SOC_CLOCK_IN);
+	ret = snd_soc_dai_set_sysclk(codec_dai, WM8731_SYSCLK_MCLK,
 					12288000, SND_SOC_CLOCK_IN);
-//	ret = snd_soc_dai_set_sysclk(codec_dai, WM8731_SYSCLK_MCLK,
-//					12288000, SND_SOC_CLOCK_IN);
 
 	if (ret < 0) {
 		dev_err(rtd->dev, "can't set codec sysclk configuration\n");
@@ -236,13 +240,17 @@ static int broxton_dmic_fixup(struct snd_soc_pcm_runtime *rtd,
 {
 	struct snd_interval *channels = hw_param_interval(params,
 						SNDRV_PCM_HW_PARAM_CHANNELS);
-	channels->min = channels->max = 4;
+	//channels->min = channels->max = 4;
+	channels->min = channels->max = 2;
 
 	return 0;
 }
 
+//static const unsigned int channels_dmic[] = {
+//	1, 2, 3, 4,
+//};
 static const unsigned int channels_dmic[] = {
-	1, 2, 3, 4,
+	1, 2,
 };
 
 static const struct snd_pcm_hw_constraint_list constraints_dmic_channels = {
@@ -256,7 +264,8 @@ static int broxton_dmic_startup(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
-	runtime->hw.channels_max = 4;
+	//runtime->hw.channels_max = 4;
+	runtime->hw.channels_max = 2;
 	snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_CHANNELS,
 					&constraints_dmic_channels);
 
@@ -293,7 +302,9 @@ static int bxt_fe_startup(struct snd_pcm_substream *substream)
 	snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_CHANNELS,
 				&constraints_channels);
 
-	runtime->hw.formats = SNDRV_PCM_FMTBIT_S16_LE;
+	//runtime->hw.formats = SNDRV_PCM_FMTBIT_S16_LE;
+	runtime->hw.formats = WM8731_FORMATS;
+	
 	snd_pcm_hw_constraint_msbits(runtime, 0, 16, 16);
 	snd_pcm_hw_constraint_list(runtime, 0,
 				SNDRV_PCM_HW_PARAM_RATE, &constraints_rates);
@@ -421,10 +432,10 @@ static struct snd_soc_dai_link broxton_rt298_dais[] = {
 		.codec_name = "i2c-INT343A:00",
 		.codec_dai_name = "wm8731-hifi",
 		.init = broxton_rt298_codec_init,
-		.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_NB_NF |
-							SND_SOC_DAIFMT_CBS_CFS,
-//		.dai_fmt = SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_NB_NF |
-//						SND_SOC_DAIFMT_CBS_CFS,
+//		.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_NB_NF |
+//							SND_SOC_DAIFMT_CBS_CFS,
+		.dai_fmt = SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_NB_NF |
+						SND_SOC_DAIFMT_CBS_CFS,
 		.ignore_pmdown_time = 1,
 		.be_hw_params_fixup = broxton_ssp5_fixup,
 		.ops = &broxton_rt298_ops,

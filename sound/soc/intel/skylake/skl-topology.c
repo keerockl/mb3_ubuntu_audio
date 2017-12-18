@@ -30,6 +30,8 @@
 #include "../common/sst-dsp.h"
 #include "../common/sst-dsp-priv.h"
 
+
+#define DEBUG
 #define SKL_CH_FIXUP_MASK		(1 << 0)
 #define SKL_RATE_FIXUP_MASK		(1 << 1)
 #define SKL_FMT_FIXUP_MASK		(1 << 2)

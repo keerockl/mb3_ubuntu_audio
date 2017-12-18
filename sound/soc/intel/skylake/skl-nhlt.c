@@ -20,6 +20,7 @@
 #include <linux/pci.h>
 #include "skl.h"
 
+#define DEBUG
 /* Unique identification for getting NHLT blobs */
 static guid_t osc_guid =
 	GUID_INIT(0xA69F886E, 0x6CEB, 0x4594,
