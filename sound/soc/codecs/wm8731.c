@@ -400,6 +400,14 @@ static int wm8731_set_dai_sysclk(struct snd_soc_dai *codec_dai,
 			return -EINVAL;
 		wm8731->sysclk_type = clk_id;
 		printk(KERN_DEBUG "[sound] clk setting success \n");
+
+		//tmp code start
+		
+		printk(KERN_DEBUG "[sound] clk_set_rate trigger again for debugging \n");
+		clk_set_rate(wm8731->mclk, freq);
+		
+		//tmp code end
+		
 		break;
 	default:
 		return -EINVAL;
@@ -497,14 +505,26 @@ static int wm8731_set_bias_level(struct snd_soc_codec *codec,
 	struct wm8731_priv *wm8731 = snd_soc_codec_get_drvdata(codec);
 	int ret;
 	u16 reg;
+	printk(KERN_DEBUG "[sound] wm8731.c %d %s\n", __LINE__, __func__);
 
 	switch (level) {
 	case SND_SOC_BIAS_ON:
+		printk(KERN_DEBUG "[sound] wm8731.c %d %s : case into SND_SOC_BIAS_ON \n", __LINE__, __func__);
+
 		if (wm8731->mclk) {
+			printk(KERN_DEBUG "[sound] wm8731.c %d %s : mclk value is on --> enabling mclk \n", __LINE__, __func__);
 			ret = clk_prepare_enable(wm8731->mclk);
 			if (ret)
 				return ret;
 		}
+
+		//tmp code start
+		ret = clk_prepare_enable(wm8731->mclk);
+		printk(KERN_DEBUG "[sound] wm8731.c %d %s : CLK_PREPARE_ENABLE return value:%d\n", __LINE__, __func__, ret);
+		if (ret)
+			return ret;
+		//tmp code end
+		
 		break;
 	case SND_SOC_BIAS_PREPARE:
 		break;
