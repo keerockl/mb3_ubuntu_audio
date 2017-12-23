@@ -72,9 +72,6 @@ static const struct snd_kcontrol_new broxton_controls[] = {
 
 static const struct snd_soc_dapm_widget broxton_widgets[] = {
 
-	SND_SOC_DAPM_SPK("SSP1 Speaker", NULL),
-	SND_SOC_DAPM_MIC("SSP1 Mic", NULL),
-
 	SND_SOC_DAPM_HP("Headphone Jack", NULL),
 	//SND_SOC_DAPM_SPK("Speaker", NULL),
 	SND_SOC_DAPM_MIC("Mic Jack", NULL),
@@ -89,6 +86,12 @@ static const struct snd_soc_dapm_route broxton_rt298_map[] = {
 	/* speaker */
 	//{"Speaker", NULL, "ROUT"},
 	//{"Speaker", NULL, "LOUT"},
+	
+	{"Headphone Jack", NULL, "ROUT"},
+	{"Headphone Jack", NULL, "LOUT"},
+
+	{"ROUT", NULL, "Playback"},
+	{"LOUT", NULL, "Playback"},
 
 	/* HP jack connectors - unknown if we have jack detect */
 	{"Headphone Jack", NULL, "LHPOUT"},
@@ -99,7 +102,7 @@ static const struct snd_soc_dapm_route broxton_rt298_map[] = {
 
 	/* other jacks */
 	
-	{"Capture", NULL, "MICIN"},
+	//{"Capture", NULL, "MICIN"},
 	{"MICIN", NULL, "Mic Jack"},
 
 	/* digital mics */
@@ -113,13 +116,12 @@ static const struct snd_soc_dapm_route broxton_rt298_map[] = {
 
 
 	/* CODEC BE connections */
-	//{ "Playback", NULL, "ssp0 Tx"},
-	{ "SSP1 Speaker", NULL, "ssp0 Tx"},
+	{ "Playback", NULL, "ssp0 Tx"},
 	{ "ssp0 Tx", NULL, "codec0_out"},
 	{ "ssp0 Tx", NULL, "codec1_out"},
 
 	{ "codec0_in", NULL, "ssp0 Rx" },
-	{ "ssp0 Rx", NULL, "SSP1 Mic" },
+	{ "ssp0 Rx", NULL, "Capture" },
 
 };
 
@@ -208,8 +210,6 @@ static int broxton_rt298_hw_params(struct snd_pcm_substream *substream,
 	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 	ret = snd_soc_dai_set_sysclk(codec_dai, WM8731_SYSCLK_XTAL,
 					12288000, SND_SOC_CLOCK_IN);
-	ret = snd_soc_dai_set_sysclk(codec_dai, WM8731_SYSCLK_MCLK,
-					12288000, SND_SOC_CLOCK_IN);
 
 	if (ret < 0) {
 		dev_err(rtd->dev, "can't set codec sysclk configuration\n");
@@ -238,15 +238,11 @@ static int broxton_dmic_fixup(struct snd_soc_pcm_runtime *rtd,
 {
 	struct snd_interval *channels = hw_param_interval(params,
 						SNDRV_PCM_HW_PARAM_CHANNELS);
-	//channels->min = channels->max = 4;
 	channels->min = channels->max = 2;
 
 	return 0;
 }
 
-//static const unsigned int channels_dmic[] = {
-//	1, 2, 3, 4,
-//};
 static const unsigned int channels_dmic[] = {
 	1, 2,
 };
@@ -262,7 +258,6 @@ static int broxton_dmic_startup(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
-	//runtime->hw.channels_max = 4;
 	runtime->hw.channels_max = 2;
 	snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_CHANNELS,
 					&constraints_dmic_channels);
@@ -300,7 +295,6 @@ static int bxt_fe_startup(struct snd_pcm_substream *substream)
 	snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_CHANNELS,
 				&constraints_channels);
 
-	//runtime->hw.formats = SNDRV_PCM_FMTBIT_S16_LE;
 	runtime->hw.formats = WM8731_FORMATS;
 	
 	snd_pcm_hw_constraint_msbits(runtime, 0, 16, 16);

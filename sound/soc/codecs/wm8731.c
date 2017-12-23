@@ -397,7 +397,10 @@ static int wm8731_set_dai_sysclk(struct snd_soc_dai *codec_dai,
 	case WM8731_SYSCLK_MCLK:
 		printk(KERN_DEBUG "[sound] clk_id : 1- XTAL, 0 - MCLK value: %d, freq:%d \n",clk_id, freq);
 		if (wm8731->mclk && clk_set_rate(wm8731->mclk, freq))
+		{
+			printk(KERN_DEBUG "[sound] mclk pointer is valid & clk_set_rate proceeded  \n");
 			return -EINVAL;
+		}
 		wm8731->sysclk_type = clk_id;
 		printk(KERN_DEBUG "[sound] clk setting success \n");
 
@@ -518,12 +521,6 @@ static int wm8731_set_bias_level(struct snd_soc_codec *codec,
 				return ret;
 		}
 
-		//tmp code start
-		ret = clk_prepare_enable(wm8731->mclk);
-		printk(KERN_DEBUG "[sound] wm8731.c %d %s : CLK_PREPARE_ENABLE return value:%d\n", __LINE__, __func__, ret);
-		if (ret)
-			return ret;
-		//tmp code end
 		
 		break;
 	case SND_SOC_BIAS_PREPARE:
@@ -558,13 +555,16 @@ static int wm8731_startup(struct snd_pcm_substream *substream,
 	struct snd_soc_dai *dai)
 {
 	struct wm8731_priv *wm8731 = snd_soc_codec_get_drvdata(dai->codec);
-	printk(KERN_DEBUG "[sound] wm8731.c %d %s\n", __LINE__, __func__);
+	printk(KERN_DEBUG "[sound] wm8731.c %d %s, dai_name:%s \n", __LINE__, __func__, dai->name);
 
 	if (wm8731->constraints)
+	{
+		printk(KERN_DEBUG "[sound] wm8731.c %d %s, constraints \n", __LINE__, __func__);
 		snd_pcm_hw_constraint_list(substream->runtime, 0,
 					   SNDRV_PCM_HW_PARAM_RATE,
 					   wm8731->constraints);
-
+	
+	}
 	return 0;
 }
 
@@ -643,6 +643,10 @@ static int wm8731_hw_init(struct device *dev, struct wm8731_priv *wm8731)
 	regmap_update_bits(wm8731->regmap, WM8731_ROUT1V, 0x100, 0);
 	regmap_update_bits(wm8731->regmap, WM8731_LINVOL, 0x100, 0);
 	regmap_update_bits(wm8731->regmap, WM8731_RINVOL, 0x100, 0);
+
+	//keerock
+	//regmap_update_bits(wm8731->regmap, WM8731_IFACE, 0x80, 1);
+
 
 	/* Disable bypass path by default */
 	regmap_update_bits(wm8731->regmap, WM8731_APANA, 0x8, 0);
