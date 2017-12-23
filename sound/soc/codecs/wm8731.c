@@ -402,14 +402,6 @@ static int wm8731_set_dai_sysclk(struct snd_soc_dai *codec_dai,
 			return -EINVAL;
 		}
 		wm8731->sysclk_type = clk_id;
-		printk(KERN_DEBUG "[sound] clk setting success \n");
-
-		//tmp code start
-		
-		printk(KERN_DEBUG "[sound] clk_set_rate trigger again for debugging \n");
-		clk_set_rate(wm8731->mclk, freq);
-		
-		//tmp code end
 		
 		break;
 	default:
