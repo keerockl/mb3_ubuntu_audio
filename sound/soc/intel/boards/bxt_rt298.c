@@ -424,6 +424,7 @@ static struct snd_soc_dai_link broxton_rt298_dais[] = {
 		.platform_name = "0000:00:0e.0",
 		.no_pcm = 1,
 		.codec_name = "i2c-INT343A:00",
+//		.codec_name = "wm8731.7-001a",
 		.codec_dai_name = "wm8731-hifi",
 //		.init = broxton_rt298_codec_init,
 		.init = NULL,
