@@ -64,6 +64,6 @@ static void __exit apli_mb3_wm8731_i2c_exit(void)
 device_initcall(apli_mb3_wm8731_i2c_init);
 module_exit(apli_mb3_wm8731_i2c_exit);
 
-MODULE_DESCRIPTION("Intel Apolo Lake-I Leaf Hill ASoC Machine Driver Init");
+MODULE_DESCRIPTION("Intel Apolo Lake-I MB3 ASoC Machine Driver Init");
 MODULE_LICENSE("GPL v2");
 MODULE_ALIAS("platform:mb3_wm8731_i2s");

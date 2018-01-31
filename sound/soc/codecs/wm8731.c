@@ -843,9 +843,11 @@ MODULE_DEVICE_TABLE(acpi, wm8731_acpi_match);
 static struct i2c_driver wm8731_i2c_driver = {
 	.driver = {
 		.name = "wm8731",
-		//.owner = THIS_MODULE,
-		//.of_match_table = wm8731_of_match,
-		.acpi_match_table = ACPI_PTR(wm8731_acpi_match),
+		.owner = THIS_MODULE,
+		// use wm8731_of_match table which is defined in arch/x86/platform/mb3/mb3_wm8731_i2c.c
+		.of_match_table = wm8731_of_match,
+		// use acpi_match table for i2c
+		//.acpi_match_table = ACPI_PTR(wm8731_acpi_match),
 	},
 	.probe =    wm8731_i2c_probe,
 	.remove =   wm8731_i2c_remove,

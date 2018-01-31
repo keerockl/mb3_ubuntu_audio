@@ -51,6 +51,8 @@
 #define NAME_SIZE	32
 #define DEBUG
 
+#define CONFIG_DEBUG_FS
+
 #ifdef CONFIG_DEBUG_FS
 struct dentry *snd_soc_debugfs_root;
 EXPORT_SYMBOL_GPL(snd_soc_debugfs_root);

@@ -39,7 +39,7 @@ struct bxt_hdmi_pcm {
 	int device;
 };
 
-struct bxt_rt286_private {
+struct bxt_wm8731_private {
 	struct list_head hdmi_pcm_list;
 };
 
@@ -82,7 +82,7 @@ static const struct snd_soc_dapm_widget broxton_widgets[] = {
 	SND_SOC_DAPM_SPK("HDMI3", NULL),
 };
 
-static const struct snd_soc_dapm_route broxton_rt298_map[] = {
+static const struct snd_soc_dapm_route broxton_wm8731_map[] = {
 	/* speaker */
 	//{"Speaker", NULL, "ROUT"},
 	//{"Speaker", NULL, "LOUT"},
@@ -125,7 +125,7 @@ static const struct snd_soc_dapm_route broxton_rt298_map[] = {
 
 };
 
-static int broxton_rt298_fe_init(struct snd_soc_pcm_runtime *rtd)
+static int broxton_wm8731_fe_init(struct snd_soc_pcm_runtime *rtd)
 {
 	struct snd_soc_dapm_context *dapm;
 	struct snd_soc_component *component = rtd->cpu_dai->component;
@@ -137,7 +137,7 @@ static int broxton_rt298_fe_init(struct snd_soc_pcm_runtime *rtd)
 	return 0;
 }
 
-static int broxton_rt298_codec_init(struct snd_soc_pcm_runtime *rtd)
+static int broxton_wm8731_codec_init(struct snd_soc_pcm_runtime *rtd)
 {
 	struct snd_soc_codec *codec = rtd->codec;
 	int ret = 0;
@@ -150,7 +150,6 @@ static int broxton_rt298_codec_init(struct snd_soc_pcm_runtime *rtd)
 
 	if (ret)
 		return ret;
-	//rt298_mic_detect(codec, &broxton_headset);
 
 	snd_soc_dapm_ignore_suspend(&rtd->card->dapm, "SoC DMIC");
 
@@ -159,7 +158,7 @@ static int broxton_rt298_codec_init(struct snd_soc_pcm_runtime *rtd)
 
 static int broxton_hdmi_init(struct snd_soc_pcm_runtime *rtd)
 {
-	struct bxt_rt286_private *ctx = snd_soc_card_get_drvdata(rtd->card);
+	struct bxt_wm8731_private *ctx = snd_soc_card_get_drvdata(rtd->card);
 	struct snd_soc_dai *dai = rtd->codec_dai;
 	struct bxt_hdmi_pcm *pcm;
 	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
@@ -198,15 +197,13 @@ static int broxton_ssp5_fixup(struct snd_soc_pcm_runtime *rtd,
 	return 0;
 }
 
-static int broxton_rt298_hw_params(struct snd_pcm_substream *substream,
+static int broxton_wm8731_hw_params(struct snd_pcm_substream *substream,
 	struct snd_pcm_hw_params *params)
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct snd_soc_dai *codec_dai = rtd->codec_dai;
 	int ret;
 
-//	ret = snd_soc_dai_set_sysclk(codec_dai, RT298_SCLK_S_PLL,
-//					19200000, SND_SOC_CLOCK_IN);
 	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 	ret = snd_soc_dai_set_sysclk(codec_dai, WM8731_SYSCLK_XTAL,
 					12288000, SND_SOC_CLOCK_IN);
@@ -219,8 +216,8 @@ static int broxton_rt298_hw_params(struct snd_pcm_substream *substream,
 	return ret;
 }
 
-static const struct snd_soc_ops broxton_rt298_ops = {
-	.hw_params = broxton_rt298_hw_params,
+static const struct snd_soc_ops broxton_wm8731_ops = {
+	.hw_params = broxton_wm8731_hw_params,
 };
 
 static const unsigned int rates[] = {
@@ -304,12 +301,12 @@ static int bxt_fe_startup(struct snd_pcm_substream *substream)
 	return 0;
 }
 
-static const struct snd_soc_ops broxton_rt298_fe_ops = {
+static const struct snd_soc_ops broxton_wm8731_fe_ops = {
 	.startup = bxt_fe_startup,
 };
 
 /* broxton digital audio interface glue - connects codec <--> CPU */
-static struct snd_soc_dai_link broxton_rt298_dais[] = {
+static struct snd_soc_dai_link broxton_wm8731_dais[] = {
 
 	/* Front End DAI links */
 
@@ -324,10 +321,10 @@ static struct snd_soc_dai_link broxton_rt298_dais[] = {
 		.dynamic = 1,
 		.codec_name = "snd-soc-dummy",
 		.codec_dai_name = "snd-soc-dummy-dai",
-		.init = broxton_rt298_fe_init,
+		.init = broxton_wm8731_fe_init,
 		.trigger = {SND_SOC_DPCM_TRIGGER_POST, SND_SOC_DPCM_TRIGGER_POST},
 		.dpcm_playback = 1,
-		.ops = &broxton_rt298_fe_ops,
+		.ops = &broxton_wm8731_fe_ops,
 	},
 	[BXT_DPCM_AUDIO_CP] =
 	{
@@ -341,7 +338,7 @@ static struct snd_soc_dai_link broxton_rt298_dais[] = {
 		.codec_dai_name = "snd-soc-dummy-dai",
 		.trigger = {SND_SOC_DPCM_TRIGGER_POST, SND_SOC_DPCM_TRIGGER_POST},
 		.dpcm_capture = 1,
-		.ops = &broxton_rt298_fe_ops,
+		.ops = &broxton_wm8731_fe_ops,
 	},
 	
 	[BXT_DPCM_AUDIO_REF_CP] =
@@ -423,16 +420,16 @@ static struct snd_soc_dai_link broxton_rt298_dais[] = {
 		.cpu_dai_name = "SSP0 Pin",
 		.platform_name = "0000:00:0e.0",
 		.no_pcm = 1,
+		
 //		.codec_name = "i2c-INT343A:00",
 		.codec_name = "wm8731.7-001a",
 		.codec_dai_name = "wm8731-hifi",
-//		.init = broxton_rt298_codec_init,
 		.init = NULL,
 		.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_NB_NF |
 							SND_SOC_DAIFMT_CBS_CFS,
 		.ignore_pmdown_time = 1,
 		.be_hw_params_fixup = broxton_ssp5_fixup,
-		.ops = &broxton_rt298_ops,
+		.ops = &broxton_wm8731_ops,
 		.dpcm_playback = 1,
 		.dpcm_capture = 1,
 	},
@@ -488,7 +485,7 @@ static struct snd_soc_dai_link broxton_rt298_dais[] = {
 #define NAME_SIZE	32
 static int bxt_card_late_probe(struct snd_soc_card *card)
 {
-	struct bxt_rt286_private *ctx = snd_soc_card_get_drvdata(card);
+	struct bxt_wm8731_private *ctx = snd_soc_card_get_drvdata(card);
 	struct bxt_hdmi_pcm *pcm;
 	struct snd_soc_codec *codec = NULL;
 	int err, i = 0;
@@ -521,18 +518,18 @@ static int bxt_card_late_probe(struct snd_soc_card *card)
 }
 
 
-/* broxton audio machine driver for SPT + RT298S */
-static struct snd_soc_card broxton_rt298 = {
+/* broxton audio machine driver for SPT + WM8731 */
+static struct snd_soc_card broxton_wm8731 = {
 	.name = "broxton-wm8731",
 	.owner = THIS_MODULE,
-	.dai_link = broxton_rt298_dais,
-	.num_links = ARRAY_SIZE(broxton_rt298_dais),
+	.dai_link = broxton_wm8731_dais,
+	.num_links = ARRAY_SIZE(broxton_wm8731_dais),
 	.controls = broxton_controls,
 	.num_controls = ARRAY_SIZE(broxton_controls),
 	.dapm_widgets = broxton_widgets,
 	.num_dapm_widgets = ARRAY_SIZE(broxton_widgets),
-	.dapm_routes = broxton_rt298_map,
-	.num_dapm_routes = ARRAY_SIZE(broxton_rt298_map),
+	.dapm_routes = broxton_wm8731_map,
+	.num_dapm_routes = ARRAY_SIZE(broxton_wm8731_map),
 	.fully_routed = true,
 	.late_probe = bxt_card_late_probe,
 
@@ -540,7 +537,7 @@ static struct snd_soc_card broxton_rt298 = {
 
 static int broxton_audio_probe(struct platform_device *pdev)
 {
-	struct bxt_rt286_private *ctx;
+	struct bxt_wm8731_private *ctx;
 
 	ctx = devm_kzalloc(&pdev->dev, sizeof(*ctx), GFP_ATOMIC);
 	if (!ctx)
@@ -548,17 +545,17 @@ static int broxton_audio_probe(struct platform_device *pdev)
 
 	INIT_LIST_HEAD(&ctx->hdmi_pcm_list);
 
-	broxton_rt298.dev = &pdev->dev;
-	snd_soc_card_set_drvdata(&broxton_rt298, ctx);
+	broxton_wm8731.dev = &pdev->dev;
+	snd_soc_card_set_drvdata(&broxton_wm8731, ctx);
 	printk(KERN_DEBUG "[sound] %s %d %s\n", __FILE__, __LINE__, __func__);
 
-	return devm_snd_soc_register_card(&pdev->dev, &broxton_rt298);
+	return devm_snd_soc_register_card(&pdev->dev, &broxton_wm8731);
 }
 
 static struct platform_driver broxton_audio = {
 	.probe = broxton_audio_probe,
 	.driver = {
-		.name = "bxt_alc298s_i2s",
+		.name = "bxt_wm8731_i2s",
 		.pm = &snd_soc_pm_ops,
 	},
 };
@@ -569,4 +566,4 @@ MODULE_AUTHOR("Ramesh Babu <Ramesh.Babu@intel.com>");
 MODULE_AUTHOR("Senthilnathan Veppur <senthilnathanx.veppur@intel.com>");
 MODULE_DESCRIPTION("Intel SST Audio for Broxton");
 MODULE_LICENSE("GPL v2");
-MODULE_ALIAS("platform:bxt_alc298s_i2s");
+MODULE_ALIAS("platform:bxt_wm8731_i2s");
