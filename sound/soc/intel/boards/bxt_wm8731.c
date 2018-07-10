@@ -562,7 +562,8 @@ static struct platform_driver broxton_audio = {
 module_platform_driver(broxton_audio)
 
 /* Module information */
-MODULE_AUTHOR("Ramesh Babu <Ramesh.Babu@intel.com>");
+MODULE_AUTHOR("Keerock Lee <keerock.lee@intel.com>");
+MODULE_AUTHOR(" Babu <Ramesh.Babu@intel.com>");
 MODULE_AUTHOR("Senthilnathan Veppur <senthilnathanx.veppur@intel.com>");
 MODULE_DESCRIPTION("Intel SST Audio for Broxton");
 MODULE_LICENSE("GPL v2");
